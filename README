@@ -113,6 +113,9 @@ General Public License for more details.
 Changelog
 =========
 
+2012-03-30      Moved db file path as an url parameter instead of an hard coded variable, 
+		its allow to use philesight on several datasources
+
 2012-03-22	Added support for proper counting of hard links (thanks 
 		Kyle Bygott)
 

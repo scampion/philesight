@@ -1,10 +1,11 @@
-#!/usr/bin/ruby
+#!/usr/bin/ruby1.8
 # vi: ts=2 sw=2
 
 require 'getoptlong'
 require 'cgi'
 require 'cairo'
 require 'bdb'
+require 'set'
 
 class PNGWriter
 

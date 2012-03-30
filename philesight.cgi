@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/ruby1.8
 #
 # CGI-wrapper for philesight
 
@@ -10,7 +10,7 @@ require 'digest/md5'
 # Config variables
 ##############################################################################
 
-$path_db = "/tmp/ps.db"
+$path_db = ""
 $img_size = 800
 $img_rings = 4
 $img_gradients = true
@@ -30,17 +30,16 @@ $show_list = true
 class PhilesightCGI
 
 	def initialize()
-		
-		# Create philesight object and open database
-		
-		@ps = Philesight.new($img_rings, $img_size, $img_gradients)
-		@ps.db_open($path_db)
-
 		# Get parameters from environment and CGI. 
-
 		cgi = CGI.new;
 		cmd = cgi.params['cmd'][0]
-		path = cgi.params['path'][0] || @ps.prop_get("root") || "/"
+                $path_db = cgi.params['db'][0]
+
+		# Create philesight object and open database
+                @ps = Philesight.new($img_rings, $img_size, $img_gradients)
+		@ps.db_open($path_db)
+
+                path = cgi.params['path'][0] || @ps.prop_get("root") || "/"
 
 		# ISMAP image maps do not return a proper CGI parameter, but only the
 		# coordinates appended after a question mark. If this is found in the
@@ -70,7 +69,7 @@ class PhilesightCGI
 
 			when "find"
 				if(find_pos =~  /(\d+),(\d+)/) then
-					do_find(path, $1.to_i, $2.to_i)
+					do_find(path, $1.to_i, $2.to_i, $path_db)
 				end
 
 			else 
@@ -149,8 +148,8 @@ class PhilesightCGI
 	# Find the path belonging to the ring and segment the user clicked
 	# 
 
-	def do_find(path, x, y)
-		url = "?path=%s" % CGI.escape(@ps.find(path, x, y))
+	def do_find(path, x, y, path_db)
+		url = "?db="+ CGI.escape(path_db) + "&amp;path=%s" % CGI.escape(@ps.find(path, x, y))
 		puts "Content-type: text/html"
 		puts "Cache-Control: no-cache, must-revalidate"
 		puts "Expires: Sat, 26 Jul 1997 05:00:00 GMT"
@@ -181,9 +180,9 @@ class PhilesightCGI
 		puts '<head>'
 		puts '	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />'
 		puts "	<title>Disk usage : " + CGI.escapeHTML(path) + "</title>"
+                puts "  <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>"
 		puts '	<style type="text/css">'
-		puts '	<!--'
-		puts '		body {color:black;text-align:center;background:#FAFAFA;}'
+		puts "		body {color:black; text-align:center; background:#FAFAFA; font-family: 'Open Sans', sans-serif; }"
 		puts '		table {margin:auto;width:780px;}'
 		puts '		table,td {border:0;}'
 		puts '		td {padding:4px;text-align:left;}'
@@ -193,12 +192,11 @@ class PhilesightCGI
 		puts '		tbody tr.parentdir td {background:#E5D0D0;}'
 		puts '		tbody tr.evenrow td {background:#E4E4E4;}'
 		puts '		'
-		puts '	-->'
 		puts '	</style>'
 		puts '</head>'
 		puts '<body>'
-		puts '	<p><a href="' + "?path=" + CGI.escape(path) + "&amp;" + '">'
-		puts '		<img style="border:0" width="' + $img_size.to_s + '" height="' + $img_size.to_s + '" src="?cmd=img&path=' + CGI.escape(path) + '" ismap="ismap" alt="' + CGI.escapeHTML(path) + '" />'
+		puts '	<p><a href="' + "?db="+ CGI.escape($path_db) + "&amp;path=" + CGI.escape(path) + "&amp;" + '">'
+		puts '		<img style="border:0" width="' + $img_size.to_s + '" height="' + $img_size.to_s + '" src="?db='+ $path_db + '&cmd=img&path=' + CGI.escape(path) + '" ismap="ismap" alt="' + CGI.escapeHTML(path) + '" />'
 		puts '	</a></p>'
 	
 		if $show_list then
@@ -223,7 +221,7 @@ class PhilesightCGI
 							print '			<tr>'
 						end
 
-						puts '<td><a href="?path='+ CGI.escape(f[:path].to_s) +'">' + f[:path].to_s + '</a></td><td class="size">' + f[:humansize].to_s + '</td></tr>'
+						puts '<td><a href="?db='+ CGI.escape($path_db) + '&amp;path='+ CGI.escape(f[:path].to_s) +'">' + f[:path].to_s + '</a></td><td class="size">' + f[:humansize].to_s + '</td></tr>'
 
 						linenum += 1
 					end
